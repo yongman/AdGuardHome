@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -12,7 +11,6 @@ import (
 	"github.com/AdguardTeam/golibs/errors"
 	"github.com/AdguardTeam/golibs/log"
 	"go.etcd.io/bbolt"
-	"golang.org/x/crypto/bcrypt"
 )
 
 // sessionTokenSize is the length of session token in bytes.
@@ -303,12 +301,14 @@ func (a *Auth) addUser(u *webUser, password string) (err error) {
 		return errors.Error("empty password")
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return fmt.Errorf("generating hash: %w", err)
-	}
+	// hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	// if err != nil {
+	// 	return fmt.Errorf("generating hash: %w", err)
+	// }
 
-	u.PasswordHash = string(hash)
+	//u.PasswordHash = string(hash)
+	// use plain text password for now
+	u.PasswordHash = string([]byte(password))
 
 	a.lock.Lock()
 	defer a.lock.Unlock()
@@ -327,7 +327,9 @@ func (a *Auth) findUser(login, password string) (u webUser, ok bool) {
 
 	for _, u = range a.users {
 		if u.Name == login &&
-			bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)) == nil {
+			//bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)) == nil {
+			// to save cpu works with home-assistant
+			u.PasswordHash == password {
 			return u, true
 		}
 	}
